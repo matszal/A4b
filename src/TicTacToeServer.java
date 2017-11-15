@@ -1,13 +1,23 @@
-// Fig. 18.8: TicTacToeServer.java
-// This class maintains a game of Tic-Tac-Toe for two client applets.
+/*
+
+SERVER STARTS HERE
+
+ */
 import java.awt.*;
 import java.awt.event.*;
 import java.net.*;
 import java.io.*;
 import java.util.Arrays;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 import javax.swing.*;
 
-public class TicTacToeServer extends JFrame {
+public class TicTacToeServer extends JFrame
+{
+    static Logger logger = Logger.getLogger("log");
+    static FileHandler fh;
+
     private char[] board;
     private JTextArea outputArea;
     private Player[] players;
@@ -67,15 +77,12 @@ public class TicTacToeServer extends JFrame {
                 // wait for each client to connect
                 for (int i = 0; i < players.length; i++)
                 {
-
                     // wait for connection, create Player, start thread
                     try
                     {
                         players[i] = new Player(server.accept(), i);
                         players[i].start();
-
                     }
-
                     // process problems receiving connection from client
                     catch (IOException ioException)
                     {
@@ -91,7 +98,6 @@ public class TicTacToeServer extends JFrame {
                     players[PLAYER_X].notify();
                 }
                 startNewGame = false;
-
 
             } else
             {
@@ -120,12 +126,10 @@ public class TicTacToeServer extends JFrame {
                         outputArea.setCaretPosition(
                                 outputArea.getText().length() );
                     }
-
                 }  // end inner class
 
         ); // end call to SwingUtilities.invokeLater
     }
-
     // Determine if a move is valid. This method is synchronized because
     // only one move can be made at a time.
     public synchronized boolean validateAndMove( int location, int player )
@@ -150,7 +154,6 @@ public class TicTacToeServer extends JFrame {
             //counter++;
             // set move in board array
             board[ location ] = currentPlayer == PLAYER_X ? X_MARK : O_MARK;
-            //gameFinished = isGameOver();
 
             // change current player
             currentPlayer = ( currentPlayer + 1 ) % 2;
@@ -160,19 +163,6 @@ public class TicTacToeServer extends JFrame {
 
             notify(); // tell waiting player to continue
 
-            // tell player that made move that the move was valid
-            System.out.println(counter);
-            if (counter == 9)
-            {
-                //isDraw = true;
-                players[currentPlayer].sendDraw(-1);
-                currentPlayer = (currentPlayer + 1) % 2;
-                players[currentPlayer].sendDraw(location);
-                counter =0;
-                //isGameOver();
-                //System.out.println("set a flagh for draw");
-
-            }
             return true;
         }
 
@@ -182,7 +172,6 @@ public class TicTacToeServer extends JFrame {
 
     } // end method validateAndMove
 
-
     // determine whether location is occupied
     public boolean isOccupied( int location )
     {
@@ -190,6 +179,26 @@ public class TicTacToeServer extends JFrame {
             return true;
         else
             return false;
+    }
+
+    //method to check if there is a draw
+    public boolean isDraw()
+    {
+        int counter = 0;
+
+        for (int x = 0; x < 9; x++){
+            if ((board[x] == X_MARK) || (board[x] == O_MARK)){
+                counter++;
+            }
+            else{
+                counter = 0;
+            }
+        }
+        if (counter == 9){
+            return true;
+        }
+
+        return false;
     }
 
     // place code in this method to determine whether game over
@@ -244,19 +253,22 @@ public class TicTacToeServer extends JFrame {
 
     }
 
-    public static void main( String args[] )
+    public static void main( String args[] ) throws Exception
     {
+
+        fh = new FileHandler("C:\\Users\\Mateusz\\Documents\\GMIT\\Client Server Programming\\Assignment4tictactoe\\MyLogFile.log");
+        logger.addHandler(fh);
+        SimpleFormatter formatter = new SimpleFormatter();
+        fh.setFormatter(formatter);
+        logger.info("start here");
 
         int port = 54321;
         if (args.length >0)
         {
             port = Integer.parseInt(args[0]);
-            System.out.println("port argument is : "+args[0]);
-
+            logger.info("port argument is : "+args[0]);
         }
         System.out.println("Using port : "+port);
-
-
         TicTacToeServer application = new TicTacToeServer(port);
         application.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
         application.execute();
@@ -359,9 +371,17 @@ public class TicTacToeServer extends JFrame {
                 }
                 while(true)
                 {
+
                     // while game not over
                     while (!isGameOver())
                     {
+                        if (isDraw())
+                        {
+                            players[currentPlayer].sendDraw(-1);
+                            currentPlayer = (currentPlayer + 1) % 2;
+                            players[currentPlayer].sendDraw(currentPlayer);
+
+                        }
 
                         if (input.available() > 0)
                         {
@@ -379,7 +399,9 @@ public class TicTacToeServer extends JFrame {
                         }
                     }
 
+                    logger.info("gameOver!");
                     output.writeUTF("game over");
+                    output.flush();
 
                     int reset = input.readInt();
 
@@ -390,24 +412,26 @@ public class TicTacToeServer extends JFrame {
                             firstPressed++;
                             if (firstPressed == 1)
                             {
-                                System.out.println("player 1 pressed button");
+                                logger.info("player 1 pressed button");
                                 output.writeUTF("player1");
+                                output.flush();
                                 currentPlayer = playerNumber;
-                                Arrays.fill(board, ' ');
+                                Arrays.fill(board, ' '); //reset game so GameOver() now returns false
+
                             } else
                             {
-                                System.out.println("player 2 pressed button");
+                                logger.info("player 2 pressed button");
                                 output.writeUTF("player2");
+                                output.flush();
                                 firstPressed = 0;
                                 playerNumber = (currentPlayer + 1) % 2;
-
+                                firstPressed =0;  //reset this for new game
                             }
                         }
                     }
                 }
-
-               // connection.close(); // close connection to client
-               // System.out.println("Connection closed");
+                // connection.close(); // close connection to client
+                // System.out.println("Connection closed");
 
             } // end try
 

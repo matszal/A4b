@@ -1,5 +1,8 @@
-// Fig. 27.14: TicTacToeServerTest.java
-// Class that tests Tic-Tac-Toe server.
+/*
+
+CLIENT STARTS HERE
+
+ */
 import javax.swing.JFrame;
 
 public class TicTacToeClientTest

@@ -1,5 +1,8 @@
-// Fig. 18.9: TicTacToeClient.java
-// Client that let a user play Tic-Tac-Toe with another across a network.
+/*
+
+CLIENT
+
+ */
 import java.awt.*;
 import java.awt.event.*;
 import java.net.*;
@@ -9,8 +12,8 @@ import java.util.concurrent.Executors;
 import javax.swing.*;
 
 public class TicTacToeClient extends JFrame implements Runnable {
+
     private JButton restartButton;
-    //private JButton restartButton;
     private JTextField idField;
     private JTextArea displayArea;
     private JPanel boardPanel, panel2;
@@ -67,20 +70,8 @@ public class TicTacToeClient extends JFrame implements Runnable {
         restartButton = new JButton("restart Game");
         restartButton.setVisible(false);
         add(restartButton, BorderLayout.EAST);
-        restartButton.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                for (int i = 0; i < 3; i++)
-                    for (int j = 0; j < 3; j++)
-                    {
-                        setMark(board[i][j], ' ');
+        restartButton.addActionListener(new reset());
 
-                    }
-                    startClient();
-            }
-        });
 
         // set up panel to contain boardPanel (for layout purposes)
         panel2 = new JPanel();
@@ -96,6 +87,20 @@ public class TicTacToeClient extends JFrame implements Runnable {
     // Make connection to server and get associated streams.
     // Start separate thread to allow this applet to
     // continually update its output in textarea display.
+
+    private void resetBoard() {
+
+        for ( int row = 0; row < board.length; row++ ) {
+
+            for ( int column = 0; column < board[ row ].length; column++ ) {
+
+                setMark(  board[ row ][ column ],
+                        (' ') );
+
+            }
+        }
+        restartButton.setVisible(false);
+    }
     public  void startClient()
     {
         // connect to server, get streams and start outputThread
@@ -164,14 +169,17 @@ public class TicTacToeClient extends JFrame implements Runnable {
             myTurn = true;
             myMark = O_MARK;
         }
-       else  if(message.equals("game over"))
+        else  if(message.equals("game over"))
         {
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    //displayMessage( "Draw.\n" );
-                    restartButton.setVisible(true);
-                }
-            });
+            SwingUtilities.invokeLater(
+                    new Runnable() {
+                        public void run()
+                        {
+                            restartButton.setVisible(true);
+                        }
+                    }
+            );
+
             if(myTurn == false)
             {
                 displayMessage( myMark + " won!\n" );
@@ -182,7 +190,7 @@ public class TicTacToeClient extends JFrame implements Runnable {
             }
         }
         // valid move occurred
-      else   if ( message.equals( "Valid move." ) ) {
+        else   if ( message.equals( "Valid move." ) ) {
             displayMessage( "Valid move, please wait.\n" );
             setMark( currentSquare, myMark );
         }
@@ -226,13 +234,21 @@ public class TicTacToeClient extends JFrame implements Runnable {
 
                 System.out.println("Player "+myMark+" Draw");
 
-                SwingUtilities.invokeLater(new Runnable() {
+                SwingUtilities.invokeLater(
+                        new Runnable() {
+                            public void run()
+                            {
+                                restartButton.setVisible(true);
+                            }
+                        }
+                );
+                /*SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
                         displayMessage( "Draw.\n" );
                         restartButton.setVisible(true);
                     }
-                });
-                output.writeInt( -1 );
+                });*/
+
             } // end try
             catch ( IOException ioException ) {
                 ioException.printStackTrace();
@@ -281,11 +297,12 @@ public class TicTacToeClient extends JFrame implements Runnable {
     // send message to server indicating clicked square
     public void sendClickedSquare( int location )
     {
-        if ( myTurn ) {
-
+        if ( myTurn )
+        {
             // send location to server
             try {
                 output.writeInt( location );
+                output.flush();
                 myTurn = false;
             }
 
@@ -301,6 +318,25 @@ public class TicTacToeClient extends JFrame implements Runnable {
     {
         currentSquare = square;
     }
+
+    public class reset implements ActionListener {
+
+        public void actionPerformed(ActionEvent evt) {
+
+
+            try {
+                output.writeInt(-1);
+                output.flush();
+                resetBoard();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+
 
     // private inner class for the squares on the board
     private class Square extends JPanel {
@@ -361,18 +397,3 @@ public class TicTacToeClient extends JFrame implements Runnable {
     } // end inner-class Square
 
 } // end class TicTacToeClient
-
-/**************************************************************************
- * (C) Copyright 1992-2003 by Deitel & Associates, Inc. and               *
- * Prentice Hall. All Rights Reserved.                                    *
- *                                                                        *
- * DISCLAIMER: The authors and publisher of this book have used their     *
- * best efforts in preparing the book. These efforts include the          *
- * development, research, and testing of the theories and programs        *
- * to determine their effectiveness. The authors and publisher make       *
- * no warranty of any kind, expressed or implied, with regard to these    *
- * programs or to the documentation contained in these books. The authors *
- * and publisher shall not be liable in any event for incidental or       *
- * consequential damages in connection with, or arising out of, the       *
- * furnishing, performance, or use of these programs.                     *
- *************************************************************************/
